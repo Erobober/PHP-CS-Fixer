@@ -7,22 +7,32 @@
         {
             "name": "Fabien Potencier",
             "email": "fabien@symfony.com"
+        },
+        {
+            "name": "Dariusz Rumiński",
+            "email": "dariusz.ruminski@gmail.com"
         }
     ],
     "require": {
-        "php": ">=5.3.3",
+        "php": ">=5.3.6",
         "symfony/console": "~2.1",
+        "symfony/event-dispatcher" : "~2.1",
         "symfony/filesystem": "~2.1",
         "symfony/finder": "~2.1",
-        "sebastian/diff": "1.0.*@dev"
+        "symfony/process": "~2.3",
+        "symfony/stopwatch": "~2.5",
+        "sebastian/diff": "~1.1"
+    },
+    "require-dev": {
+        "satooshi/php-coveralls": "0.7.*@dev"
     },
     "autoload": {
-        "psr-0": { "Symfony\\CS": "." }
+        "psr-4": { "Symfony\\CS\\": "Symfony/CS/" }
     },
     "bin": ["php-cs-fixer"],
     "extra": {
         "branch-alias": {
-            "dev-master": "0.3.x-dev"
+            "dev-master": "2.0-dev"
         }
     }
 }

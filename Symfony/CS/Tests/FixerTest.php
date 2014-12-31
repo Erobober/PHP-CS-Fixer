@@ -11,9 +11,9 @@
 
 namespace Symfony\CS\Tests;
 
+use Symfony\CS\Config\Config;
 use Symfony\CS\Fixer;
 use Symfony\CS\FixerInterface;
-use Symfony\CS\Config\Config;
 
 class FixerTest extends \PHPUnit_Framework_TestCase
 {
@@ -24,24 +24,25 @@ class FixerTest extends \PHPUnit_Framework_TestCase
     {
         $fixer = new Fixer();
 
-        $f1 = $this->getMock('Symfony\CS\FixerInterface');
-        $f1->expects($this->any())->method('getPriority')->will($this->returnValue(0));
+        $fxPrototypes = array(
+            array('getPriority' =>   0),
+            array('getPriority' => -10),
+            array('getPriority' =>  10),
+            array('getPriority' => -10),
+        );
 
-        $f2 = $this->getMock('Symfony\CS\FixerInterface');
-        $f2->expects($this->any())->method('getPriority')->will($this->returnValue(-10));
+        $fxs = array();
 
-        $f3 = $this->getMock('Symfony\CS\FixerInterface');
-        $f3->expects($this->any())->method('getPriority')->will($this->returnValue(10));
+        foreach ($fxPrototypes as $fxPrototype) {
+            $fx = $this->getMock('Symfony\CS\FixerInterface');
+            $fx->expects($this->any())->method('getPriority')->willReturn($fxPrototype['getPriority']);
 
-        $f4 = $this->getMock('Symfony\CS\FixerInterface');
-        $f4->expects($this->any())->method('getPriority')->will($this->returnValue(-10));
+            $fixer->addFixer($fx);
+            $fxs[] = $fx;
+        }
 
-        $fixer->addFixer($f1);
-        $fixer->addFixer($f2);
-        $fixer->addFixer($f3);
-        $fixer->addFixer($f4);
-
-        $this->assertSame(array($f3, $f1, $f4, $f2), $fixer->getFixers());
+        // There are no rules that forces $fxs[1] to be prioritized before $fxs[3]. We should not test against that
+        $this->assertSame(array($fxs[2], $fxs[0]), array_slice($fixer->getFixers(), 0, 2));
     }
 
     /**
@@ -81,7 +82,8 @@ class FixerTest extends \PHPUnit_Framework_TestCase
         $fixer->addFixer($f1);
         $fixer->addFixer($f2);
 
-        $this->assertSame(array($f2, $f1), $fixer->getFixers());
+        $this->assertTrue(in_array($f1, $fixer->getFixers(), true));
+        $this->assertTrue(in_array($f2, $fixer->getFixers(), true));
     }
 
     /**
@@ -108,8 +110,8 @@ class FixerTest extends \PHPUnit_Framework_TestCase
     public function testThatFixSuccessfully()
     {
         $fixer = new Fixer();
-        $fixer->addFixer(new \Symfony\CS\Fixer\VisibilityFixer());
-        $fixer->addFixer(new \Symfony\CS\Fixer\Psr0Fixer()); //will be ignored cause of test keyword in namespace
+        $fixer->addFixer(new \Symfony\CS\Fixer\PSR2\VisibilityFixer());
+        $fixer->addFixer(new \Symfony\CS\Fixer\PSR0\Psr0Fixer()); //will be ignored cause of test keyword in namespace
 
         $config = Config::create()->finder(new \DirectoryIterator(__DIR__.DIRECTORY_SEPARATOR.'Fixtures'.DIRECTORY_SEPARATOR.'FixerTest'));
         $config->fixers($fixer->getFixers());
@@ -119,8 +121,8 @@ class FixerTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(1, $changed);
         $this->assertCount(2, $changed[$pathToInvalidFile]);
-        $this->assertEquals(array('appliedFixers', 'diff'), array_keys($changed[$pathToInvalidFile]));
-        $this->assertEquals('visibility', $changed[$pathToInvalidFile]['appliedFixers'][0]);
+        $this->assertSame(array('appliedFixers', 'diff'), array_keys($changed[$pathToInvalidFile]));
+        $this->assertSame('visibility', $changed[$pathToInvalidFile]['appliedFixers'][0]);
     }
 
     /**
@@ -135,13 +137,64 @@ class FixerTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($expectedLevelString, Fixer::getLevelAsString($fixer));
     }
 
+    public function testFixersPriorityEdgeFixers()
+    {
+        $fixer = new Fixer();
+        $fixer->registerBuiltInFixers();
+        $fixers = $fixer->getFixers();
+
+        $this->assertSame('encoding', $fixers[0]->getName());
+        $this->assertSame('eof_ending', $fixers[count($fixers) - 1]->getName());
+    }
+
+    /**
+     * @dataProvider getFixersPriorityCases
+     */
+    public function testFixersPriority(FixerInterface $first, FixerInterface $second)
+    {
+        $this->assertLessThan($first->getPriority(), $second->getPriority());
+    }
+
+    public function getFixersPriorityCases()
+    {
+        $fixer = new Fixer();
+        $fixer->registerBuiltInFixers();
+
+        $fixers = array();
+
+        foreach ($fixer->getFixers() as $fixer) {
+            $fixers[$fixer->getName()] = $fixer;
+        }
+
+        return array(
+            array($fixers['php_closing_tag'], $fixers['short_tag']),
+            array($fixers['unused_use'], $fixers['extra_empty_lines']),
+            array($fixers['multiple_use'], $fixers['unused_use']),
+            array($fixers['multiple_use'], $fixers['ordered_use']),
+            array($fixers['remove_lines_between_uses'], $fixers['ordered_use']),
+            array($fixers['unused_use'], $fixers['remove_leading_slash_use']),
+            array($fixers['multiple_use'], $fixers['remove_leading_slash_use']),
+            array($fixers['concat_without_spaces'], $fixers['concat_with_spaces']),
+            array($fixers['elseif'], $fixers['braces']),
+            array($fixers['duplicate_semicolon'], $fixers['braces']),
+            array($fixers['duplicate_semicolon'], $fixers['spaces_before_semicolon']),
+            array($fixers['duplicate_semicolon'], $fixers['multiline_spaces_before_semicolon']),
+            array($fixers['standardize_not_equal'], $fixers['strict']),
+            array($fixers['double_arrow_multiline_whitespaces'], $fixers['multiline_array_trailing_comma']),
+            array($fixers['double_arrow_multiline_whitespaces'], $fixers['align_double_arrow']),
+            array($fixers['phpdoc_indent'], $fixers['phpdoc_align']),
+        );
+    }
+
     public static function getFixerLevels()
     {
         return array(
+            array(FixerInterface::NONE_LEVEL, 'none'),
             array(FixerInterface::PSR0_LEVEL, 'PSR-0'),
             array(FixerInterface::PSR1_LEVEL, 'PSR-1'),
             array(FixerInterface::PSR2_LEVEL, 'PSR-2'),
-            array(FixerInterface::ALL_LEVEL, 'all'),
+            array(FixerInterface::SYMFONY_LEVEL, 'symfony'),
+            array(FixerInterface::CONTRIB_LEVEL, 'contrib'),
         );
     }
 }

@@ -11,28 +11,34 @@
 
 namespace Symfony\CS\Config;
 
-use Symfony\CS\FixerInterface;
-use Symfony\CS\FinderInterface;
 use Symfony\CS\ConfigInterface;
 use Symfony\CS\Finder\DefaultFinder;
+use Symfony\CS\FinderInterface;
+use Symfony\CS\FixerInterface;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
+ * @author Katsuhiro Ogawa <ko.fivestar@gmail.com>
  */
 class Config implements ConfigInterface
 {
     protected $name;
     protected $description;
     protected $finder;
+    protected $level;
     protected $fixers;
     protected $dir;
     protected $customFixers;
+    protected $usingCache = false;
+    protected $usingLinter = true;
+    protected $hideProgress = false;
 
     public function __construct($name = 'default', $description = 'A default configuration')
     {
         $this->name = $name;
         $this->description = $description;
-        $this->fixers = FixerInterface::ALL_LEVEL;
+        $this->level = FixerInterface::PSR2_LEVEL;
+        $this->fixers = array();
         $this->finder = new DefaultFinder();
         $this->customFixers = array();
     }
@@ -45,6 +51,20 @@ class Config implements ConfigInterface
     public function setDir($dir)
     {
         $this->dir = $dir;
+    }
+
+    public function setUsingCache($usingCache)
+    {
+        $this->usingCache = $usingCache;
+
+        return $this;
+    }
+
+    public function setUsingLinter($usingLinter)
+    {
+        $this->usingLinter = $usingLinter;
+
+        return $this;
     }
 
     public function getDir()
@@ -61,11 +81,23 @@ class Config implements ConfigInterface
 
     public function getFinder()
     {
-        if ($this->finder instanceof FinderInterface) {
+        if ($this->finder instanceof FinderInterface && $this->dir !== null) {
             $this->finder->setDir($this->dir);
         }
 
         return $this->finder;
+    }
+
+    public function level($level)
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    public function getLevel()
+    {
+        return $this->level;
     }
 
     public function fixers($fixers)
@@ -90,13 +122,37 @@ class Config implements ConfigInterface
         return $this->description;
     }
 
+    public function getHideProgress()
+    {
+        return $this->hideProgress;
+    }
+
     public function addCustomFixer(FixerInterface $fixer)
     {
         $this->customFixers[] = $fixer;
+
+        return $this;
     }
 
     public function getCustomFixers()
     {
         return $this->customFixers;
+    }
+
+    public function hideProgress($hideProgress)
+    {
+        $this->hideProgress = $hideProgress;
+
+        return $this;
+    }
+
+    public function usingCache()
+    {
+        return $this->usingCache;
+    }
+
+    public function usingLinter()
+    {
+        return $this->usingLinter;
     }
 }

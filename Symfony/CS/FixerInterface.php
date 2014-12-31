@@ -16,10 +16,12 @@ namespace Symfony\CS;
  */
 interface FixerInterface
 {
-    const PSR0_LEVEL = 1;
-    const PSR1_LEVEL = 3;
-    const PSR2_LEVEL = 7;
-    const ALL_LEVEL  = 15;
+    const NONE_LEVEL    = 0;
+    const PSR0_LEVEL    = 1;
+    const PSR1_LEVEL    = 3;
+    const PSR2_LEVEL    = 7;
+    const SYMFONY_LEVEL = 15;
+    const CONTRIB_LEVEL = 32;
 
     /**
      * Fixes a file.
@@ -32,25 +34,25 @@ interface FixerInterface
     public function fix(\SplFileInfo $file, $content);
 
     /**
+     * Returns the description of the fixer.
+     *
+     * A short one-line description of what the fixer does.
+     *
+     * @return string The description of the fixer
+     */
+    public function getDescription();
+
+    /**
      * Returns the level of CS standard.
      *
-     * Can be one of self::PSR1_LEVEL, self::PSR2_LEVEL, or self::ALL_LEVEL
+     * Can be one of:
+     *  - self::PSR0_LEVEL,
+     *  - self::PSR1_LEVEL,
+     *  - self::PSR2_LEVEL,
+     *  - self::SYMFONY_LEVEL,
+     *  - self::CONTRIB_LEVEL.
      */
     public function getLevel();
-
-    /**
-     * Returns the priority of the fixer.
-     *
-     * The default priority is 0 and higher priorities are executed first.
-     */
-    public function getPriority();
-
-    /**
-     * Returns true if the file is supported by this fixer.
-     *
-     * @return Boolean true if the file is supported by this fixer, false otherwise
-     */
-    public function supports(\SplFileInfo $file);
 
     /**
      * Returns the name of the fixer.
@@ -62,11 +64,18 @@ interface FixerInterface
     public function getName();
 
     /**
-     * Returns the description of the fixer.
+     * Returns the priority of the fixer.
      *
-     * A short one-line description of what the fixer does.
+     * The default priority is 0 and higher priorities are executed first.
      *
-     * @return string The description of the fixer
+     * @return int
      */
-    public function getDescription();
+    public function getPriority();
+
+    /**
+     * Returns true if the file is supported by this fixer.
+     *
+     * @return bool true if the file is supported by this fixer, false otherwise
+     */
+    public function supports(\SplFileInfo $file);
 }

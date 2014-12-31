@@ -13,13 +13,10 @@
 
 namespace Symfony\CS\Finder;
 
-use Symfony\Component\Finder\Finder;
-
 /**
  * @author Myke Hines <myke@webhines.com>
  */
 class MagentoFinder extends DefaultFinder
-
 {
     public function __construct()
     {
@@ -29,16 +26,18 @@ class MagentoFinder extends DefaultFinder
             ->name('*.php')
             ->name('*.phtml')
             ->name('*.xml')
-            ->exclude( array(
-                'lib',
-                'shell',
-                'app/Mage.php',
-                'app/code/core',
-                'app/code/community',
-                'app/design/frontend/default',
-                'app/design/frontend/enterprise/default',
-                'app/design/frontend/base',
-                'app/design/adminhtml/default')
+            ->exclude(
+                array(
+                    'lib',
+                    'shell',
+                    'app/Mage.php',
+                    'app/code/core',
+                    'app/code/community',
+                    'app/design/frontend/default',
+                    'app/design/frontend/enterprise/default',
+                    'app/design/frontend/base',
+                    'app/design/adminhtml/default',
+                )
             )
         ;
     }
@@ -59,7 +58,9 @@ class MagentoFinder extends DefaultFinder
     }
 
     /**
-     * Excludes files because modifying them would break (mainly useful for fixtures in unit tests).
+     * Excludes files because modifying them would break.
+     *
+     * This is mainly useful for fixtures in unit tests.
      *
      * @return array
      */
